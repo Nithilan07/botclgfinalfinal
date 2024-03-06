@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Question Answering Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .chat-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            flex-grow: 1;
+            margin-right: 20px;
+        }
+        .message-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .question-message {
+            margin-right: auto;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: #fff;
+        }
+        .answer-message {
+            margin-left: auto;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #6c757d;
+            color: #fff;
+        }
+        input[type="file"], input[type="text"], button {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            width: calc(100% - 22px); /* Adjust for padding */
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .bot-image {
+            width: 80px;
+            margin-left: 20px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container" id="chat-container">
+            <!-- Chat messages will be displayed here -->
+        </div>
+    </div>
+    <form id="question-form" method="post" enctype="multipart/form-data">
+        <input type="file" id="pdf" name="pdf" accept=".pdf" required>
+        <input type="text" id="question" name="question" placeholder="Ask a question..." required>
+        <button type="submit">Ask</button>
+    </form>
+
+    <script>
+        // Function to add user message to chat container
+        function addUserMessage(message) {
+            var chatContainer = document.getElementById('chat-container');
+            var messageContainer = document.createElement('div');
+            messageContainer.classList.add('message-container');
+            var userMessageElement = document.createElement('div');
+            userMessageElement.textContent = message;
+            userMessageElement.classList.add('question-message');
+            messageContainer.appendChild(userMessageElement);
+            chatContainer.appendChild(messageContainer);
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to bottom
+        }
+
+        // Function to add bot message to chat container
+        function addBotMessage(message) {
+            var chatContainer = document.getElementById('chat-container');
+            var messageContainer = document.createElement('div');
+            messageContainer.classList.add('message-container');
+            var botMessageElement = document.createElement('div');
+            botMessageElement.textContent = message;
+            botMessageElement.classList.add('answer-message');
+            messageContainer.appendChild(botMessageElement);
+            var botImage = document.createElement('img');
+            botImage.src = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxMSEhUSExIWFRUVFRUYFhgWFxUXFRcVFRUXFhgYFxUYHSggGBolHRUVITEhJSkrLi4uFx8zODMsNygtLi0BCgoKDg0OGxAQGy8lHyUtLi02LS0wLS8tLS0tLS8uLysvLy0tLS0tLS8tLS0vLS0tLS0tLS0tLS0vLS0tLS0tLf/AABEIAOEA4QMBIgACEQEDEQH/xAAcAAEAAQUBAQAAAAAAAAAAAAAAAgEEBQYHAwj/xABOEAABAwIDBAUFCAwPAQAAAAABAAIDBBEFEiEGMUFREyJhcYEHMkKRoRQzUnKxstLwFRYjNVNic4KTs8HRJCU0Q1RjZXSEkpSiwuHig//EABsBAQACAwEBAAAAAAAAAAAAAAAEBgECBQMH/8QAMBEAAgECAwUHBAIDAAAAAAAAAAECAxEEITEFEkFRcRNhgZGh0fAiMrHB4fEUIzT/2gAMAwEAAhEDEQA/AO4oiIAotddRc5SYgJIiIAiIgCIokoCSKFu1SBQFUREAREQBERAFFpvqoucpN3ICSIiAIiIAiKJKAkigpAoCqIiALzc5TIUWtQBrVNEQBERAEREAUB+1TVCEBFSAQBVQBERAEREAXm5yk8XCo1vFAVa1SREAREQBERAFBqmqEICKkAgCqgCIiAIiIAiIgCIiAIiIAsLtbjjaGklqnDNkAytvbM9xDWNvwBJFzwF1mlre3+BOrqGanYQJCGuZfQF7HBwaTwvYi/C6yrXzMO9sjncFVjlQwVPu1sJeMzIgxoaGkXAILTb87MeZW7+Trat9fDI2ZoZUU78kwGgO+zgNbXLXAjm08Fzum20dAxtPUUk4qWAMyBoAeWiwOpuL24Ajldbr5KNn54I6iqqWdHNWSB5jOhaxpe5uYeiSZH6bwMt9bgSKsYqJz8JOvKclU0OgIiKMdEIiIDE7T4yyipZal4uI23Db2zOJDWNvwu5zRftXLaevxurZ7pFa2DOM0UTWNyhp8292nQ7+tmOvgukbc4Ga2hnpmkB72gsJ0GeNwe0E8AS0AnkVyij2vfSsbS1VJO2ojaGBoaOvl6oOpvrYatDgd4UiiovqQcbOtFLszofk42skrWSxVDQ2ppnBsttA4G4DrcDdrgQNNLjQ2G6LnnkpwOeP3TW1LDHJVuaWxkWcyNuYjMDq0nNax1s0X3roa8p23nYl097dW9qERFobhERAEREAREQBERAEREAREQBERAEREARFq+2G2EVCAwNM1TJ71AzznX0DnW81lwdeNjbcbZSbyRhtJXZqu3tfHT41h80rwyOOKQucb2AtKNw1OpAsOa9qjb+rqjbDqQNj4VFVdrXdrI2m5HI3PaAtXxRzRIKvFZBPUu96p2C7WC+jWx8dTvOl+LjqryKir67z3GkhO6OL34j8d/o/W4Uncikt45zxFSo32Ky5v5me2IzVu+rxrob+jEI4bdgdcOPqWEkkoxrJjNW88+ne75IytroPJ7Ss1MLXHiZCZHHvB6qzMWzUDRYMjA7I2BN+K0Rh0Kj+6o/CyOesloibx4xVsP5aRtv80YWYw+es30mNdLb0ZRHNfsLrlw9S2uXZuFwsWRnvjYVha/yfUr9RC1p4GMmMjuA0TtIvVDsKizjUfjmesG3dbS/y+kEkfGalJOUc3RON7czdo71Z49jdPWYphMtPK2RmaS9t7T1dHNOrT2EBWM2GYhRawyGpjH81P75b8STj9dCsZTxU9TKJqQ+46+J2bo3tAu8a6sIse8C+uoRQi84mXiKtPKqsuaO9ItJ2Q23E8nuSrZ7nrAPN/m5h8KJ3hfLc9hNjbdlGcWsmdGMlJXQREWDIREQBERAEREAREQBEUXFASRQt3qQKAqiIgCIiAw+1ONsoqWWpfqI29UfCeTlY3xcQL8Bc8FyHpZYAJ3t6bE649UEeYDbS3otaLXHZbc1bP5aMYj9ydCNXGWPrDc1zbut2mwPddeOwuEySOGJVL2vlliaImtFhHGdb/Gd7LnXXT1oVIuLkudvL+yJi6M5SjCWUbX68vPX+GXWzGxrYD09Q7pql+r3nWxPBnIcNPk0W0xgAWAsOW5SVQjbepskloEREAREQFHC+h1C13aPY+GrF9WSt1ZI3R7SN1jvt2eq29bGqInYHK5KZ85dQVhyVcIz0840LwNWva4cdNbcid7brpHk82hfWUxE2lTA4xTj8du5+nwhy0uHWWN2r2eNSI3xuEc8Ls0TyOe9pt6JsPV2rVfJRj5bUVbpgM05ic54uLeeBZvIXtz9SV6sY0t+WVrersaYWhONbcp6PO3es8vD5mdoRQY8EAg3B1BG4hTXkTAiIgCIiAKLTfVRc66k0aICSIiAKIUlQhARUgEAVUAREQBYDaXF+ibkYeu4an4LefeeCytfVCKN0jtzRu5ncB4my53UTue4vcbucbn68lytqYx0YKEPufovd6I6WzsIqst+Wi9X7LVmmeUgnoYh/WH12/wCyun7OFopYGtIIbBCLaGwEbVzrGIRW1bKMOAbG10krhYuHoZRwB6w3/C7LLI01EylxSibACwTNnbLqTnDI7tzX5Gx05KdsqlKOCgnlq/BvL5yObtTEwljpQTu7JeSOigKS0Lyk7ZvpC2npyBK5uZzyAcjSSBlB0zGx37gN2unMm4/Wvcf4ZUXOvv8AK0eADrBT4021chuok7H0Ui+c5MdrW76yp/1E30lKPGq1wuKyo/1E30lt2TMdoj6KRfObMdrSbe7Km/8AeJvpKsuOVrd9ZU/6ib6Sdkx2iPotUabL5x+2Cs/plT+nm+kty2D2+nEzKeqeZI5HBjXu89j3aNu7e5pOhvqL3vbRYdJoyqiOvvkA6ziAOGtvauK7Kv8A4wqgPNHSgW3ANmsLLadtaRtTiNNTTXdD0EkmTM5oz5nC/VIN7AfUlYOTC2YbVxuYfuFQHMOc6xuFiOtxbu39qi4ylKeEqKOba/n8ex7YPE04Y2nGWWfhmn86XOj7MYtkcIXnquPVJ9Enh3H5e9bmuXLd9ncR6aKzj122DuZHB314gribIxm8uxlw06cvDh3X5He2phN19rHx9/fz4maREXcOOF5uN1JwujWoA1qkiIAiIgCIiAIiIAiIgNS2yrLlsI3DrO7zo32XPiFouMY/FTPY2QOOfW4t1W3tc8/DkVn8Tn6SWR/Nxt3DQewBadtvhrHiKZ1wGyMY+34N7rE94PylVZSpYnGPtr7rulbXS0bePqyxuNXD4RKlbeVnnpqm/T0XcZLydtaaZ01hnfLJmdxPW58v3q4xH764d/if1S8vJ1pSZeLJZWkcje9j4EL1xH764d/if1SvD0PndK/+W763ZpflUP8AGUvxIv1bVidm4WXmme3O2CAy5L2D3Zg0B1vRF7nuWW8qg/jKX4sX6tq1zDMQfA/pI7XsWkOF2ua7e1zeLTyWI/aibVTbdjNQVTaxkzJIIY5I4HzxvgZ0VujtdjxchwINr7wsJRO1IWYdiueJ0ccMMDZB906IHM63AucSQ2+tgsGw2d2g+v8A7Wx504uPCy5Epuq+/j+9bBW1LKWOENghlfLEJnPnZ0gAc5wa1jSbCwGp36rDVbNL8vkKyNBi33JscsUU7WE5BKDdhOpyuaQbHeQhmpFvLVcuZ47QQMywVEbOjFQxznRi+Vr2PLHFt9zTvAWNw/32P8oz5wXti9e+aTM+wygNY1oysYwbmtbwC8cP99j/ACjPnBDaCta52LaH78U/91k+e9T2uga+jnzNByxPc243Oa0uBHLUKG0P34p/7rJ8969dq3AUVTf8BIPEtIHtIWtP7UQsZ/0eRZYG8up4XE3Jijv/AJRqs/s9WdFO0+i7qu7juPgbe1a/gItTQfko/mhX5XzyVR067nHVSb9X+eJ9QVNVKW5LRq3odRRWmG1HSRMfxLRfv3H23V2rpGSkk1oypSTi2nwCIiyYCIiAIiIAiIgCIiAK3rH5WPdyY4+oEq4Vli3vEv5N3yLWbtFs3premk+aOdlWWMUfTwSRfDaQL7g7e0+sBXpRUanJwalHVWa6rQuE4qScXo8vM0nB8RFNM2qcxwje0xVQFz0dQ0i73MHOw9buOh2H3dFPimHmGRsgaKguyEHKDGbZrbt3FeOJ4Y8PNRT26Qi0kbvMmaOB5O5FePkwxGGGonp5I2wyPOaMyAB9ja8Oc7wNCOequuzsYq1Nxjw7813Na2XCSumtbNWdL2ls9UsQqzeby0yeWqfN8Vqnnms1lfKXsZJVltRTgGVrcr2XAL2gkgtJ0zC50O8d1jy5+z9WCQaSouP6mX5Q1fR6op0ajSsRHTTdz50iwisaLCkn/QS/RUXYJVk3NJUXPDoJfor6SgizG17K5+xx+EPas9tYKjc+aThVYRY0k+78BNr/ALd684sIrG7qSo/QS/RX019jj8Ie1W1RFlNr30TtjLo8z5tkwWrcb+5Kjwgl+itv2C2DndMyoqYzFHG4Pax+j3vabt6u9rQbE332tbW468qo6raMKmkaFtXUMixWmkkcGMNNIMziGtuHONrnTiPWFh8YrGYjURQxXfBES6Z4uGOOmVgPpbvbpuWyeU2pjFMITGyWeZ2SBrgCWk6OkF/NsDv5kKzwuiEETIh6LQCebuJ8Tcrm7S2g8NRUY/dK6XcuftpnflZzdn7MjicT2s9I26N8vfy43LkC2gUgioqYXM3fZOS9Pb4L3D/l/wAlm1gNjPeHflHfNas+rlgXfDU+iKrjVbET6/kIiKURQiIgCIiAIiIAotddRc66kwICStcSF4ZRzjf80q6UXC4ssOO8rGYy3Wpcjl6L1qYckjmH0XEeo2XkqHZrJ6l0unmgsTtFgraqPKbB7dWO5HkfxSssptb4k7h+0r1o1J05qcHZrj8/HE8q0I1IOE1dP58fA1XZOepYRTx1pgqG6e56sdJDJyMMm9oPwRryur6t2yxankcJqFrmNJF2RzZDbS7ZQSCDv1F9VkcWwmOduSaMO5HQOHxXDUKzgbiNNpT1Ymj9FlS0uIHLOOt4XAVrw+2KFRf7fpl33t4Nfvz4lYr7JrQzpfUu7Xy9s+423Y7HnVlO2oMXRHO4AZswOU2zA2Gl7jdwK2yKvafO0PrC5RVbZYjEY2vpqcmV7Y2Wc+xc7Qelosj9l8X/AKHTfpT9JdCLhVW9BpruaIEt+jLdmrPvR0eWvaN2p9QWOe8kkneVpP2Xxf8AodN+lP0ljoNssQe+WMUtPmidlf13WDuw5tUm404uUmkubaEd6rLdirvkjoqwu0m0sFEy8hzSO97ibrI88LDgL8Tp3nRarUV+KzaGeCmafwLS59u997d4IUMMwOKFxkJdLM7fLIczyd287uXNQK21cNTX0vffJft6Lwv0J1HZeIqP6lurm/ZZ+diGHUk00xrKr35wtHGN0MfBo7dTfvPMrLherW2Fz+/sXm4qsYmtUrT7So8/RLkvnfqWTDUYUoblNZfl95REVQopJNy2Qb9wPbI4+xo/Ys+sdgUGSCMc25j+cc37VkVdcJBwoQi9Ul+Co4qe/Wm+9hEUCbqQeBNFADkpAoCqIiALzc66mQqNagDWqSIgCIiA0ja2kyTZxukF/wA4aH9h8VhFv2PUHTRFo84dZveOHiLj1LQiFU9qUOyrt8JZ+/rn4lm2bW7Silxjl7en4KKbXWsRwUF4VlYyFjpJHZWtGv7gOJKgQTbstXy1uTJtJXehknPBAc63Gw/aVr1ftPTRuymQOduyxgv15aaDuupYXgdRiVpZ3OgpDqyJukkreBeeDT7f9x3jCcFp6ZuWCFkfaB1j8Z56zvEqx0dipq9eWfJW9Xn5JWXM4Fba9naivF/pZeb8jl+KYm+Z9O9lHVlsM7JD9xfq1pBIbbj32Wyfbp/Z9f8AoP8A0t7ul12KFGFCCpwWXvmcfEVJV5789TRPt0/s+v8A0H/pa5RYo+OepmdSVYbNIHt+4Pu0WPnX0vrwuuvXS62rUoVqbpzWTtxto0/0YoVJUKiqQ1X7VjmtHtNTSOy9Jkd8GQFhvy10v4rNxkfXl9fWtixTCIKluWaJkg4Fw6w+K7zm94IWlY3gdRQ3mpiZ6cayQu1kYOLo3cQBw4W3HeOJX2Ikt6g3flL9PLya8Ts0dstvdrLLmvbP5wMgT6lRW1DWsnjbJG67XesHiCOBVyq7JOLcZZNZW5dxYItNXWgVxhlL0srI/hHX4o1PsBVutr2QoLAzOG/qs+LxPiRbw7VIwWH7esocNX0Xy3Vnhi6/Y0nPjw6/M+iNmAVURXMqYUGqaoQgIqQCAKqAIiIAiIgCIiAIiIAtN2pwrK4zNHVcesOTjx7j8vetyXlLGHAtcLgixB3EKNi8NHEU3B+D5P5kz3w2IlQqby8VzXzT4jmaxGD0AxGsc54vS0jrZfRln7ebW/u4OK2DbWhdRwyzN1YGnKfguOjQfEjVXGwWHiCgp2je9gkcd93S9c6jfa4b+aufsjAyp1J1Kizjkur1a8NOvBk3auMU4RhTeUs304J+OvRapmwoiLvHCCIiAIiIAiIgOc7QYeMPqmzRi1NVOyyN9GKY7nDkHa/7uwLKFZra/DBU0c8NrkxlzPjs6zPaAPFa7sYx9bBC5ut2gPcdwLTlJPeWnTiq/trCuUoVYLN/T1esfRNdyS72d7Y+KUYypTeS+pdOPq0+rfcjLYNhpnky+iNXnl2d5W/xRhoDQLAAADkArfD6FkLAxg7zxJ5lXim4HBrDwz+56v8AXh6kbG4p155fatPcIiKcQwiIgCIiAIiIAiIgCIiAIiIAiIgPCrpmSsdHIxr2PBDmuALXA7wQd653VbLVmGuMmGnp6Ykl1HI7rNvqTDIfkOvxyV0tFlSaNZRUtTQcC2vpqo9GHGKYGzoZhklDuVj53hrzAWfU9odlaSuFqiFrnAWDx1ZG9zxrbs3LVpNjMQpf5DiHSMG6KsGYD/6tF/AAL0vF9x5OEkbMi1Q4visOk+FGQD06aVrr9oj1dbvXmduw33zDsQYe2n/e4fIs2NTb0Wn/AG/MPm0Ne49lOPpr0btHXy/yfB6g9s7mwex419YSw10NsWNxvHqekbmnlazk3e93xWDUrFMwDGan36qgo4z6NO0yS25FzvNPa13gs1gOwFFSu6XI6ebeZqg9JJfmL6A9oF+1YvFavyNlGTNbibiGK6Ma+gojvkeP4TM3kxvoA8/G7hot8wHBoaOFsEDcrG33m5JOpc4neSf+rBZRFo5XPWMEgiItTYIiIAiIgCIiAIiIAiKJKAkihlUgUBVERAEREARFQlAVUWuuouN1MBAVREQBERAERQJugJooZfWpAoCqIiAIiIAiKLnWQFHH1qQXmBdeqAIiIAoqSoQgIqQCAKqAIiIAiIgC8y66mQqNagDWqSIgCIiAIiIAohSVCEBGykAgCqgCIiAIiICLnWUBqpubdVAQABVREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQH//Z';
+            botImage.alt = 'Cute Bot';
+            botImage.classList.add('bot-image');
+            messageContainer.appendChild(botImage);
+            chatContainer.appendChild(messageContainer);
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to bottom
+        }
+
+        // Function to handle form submission
+        document.getElementById('question-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var formData = new FormData(this);
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                addUserMessage("You: " + formData.get('question'));
+                addBotMessage("" + data.answer);
+                document.getElementById('question').value = ''; // Clear the input field
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
